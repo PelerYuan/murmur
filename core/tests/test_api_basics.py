@@ -106,3 +106,9 @@ def test_settings_test_endpoints(authed):
     authed.put("/api/v1/settings", json={"llm": {"base_url": "http://llm/v1", "model": "m"}})
     r = authed.post("/api/v1/settings/test/llm").json()
     assert r["ok"] is True and r["detail"] == "pong"
+
+
+def test_settings_reject_unknown_timezone(authed):
+    r = authed.put("/api/v1/settings", json={"general": {"timezone": "Mars/Base"}})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_settings"
+    assert authed.put("/api/v1/settings", json={"general": {"timezone": "Europe/Paris"}}).status_code == 200

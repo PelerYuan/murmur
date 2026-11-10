@@ -25,6 +25,17 @@ class General(_Group):
     ui_language: str = "zh"
     output_language: str = "zh"
 
+    @field_validator("timezone")
+    @classmethod
+    def _timezone(cls, v: str) -> str:
+        from zoneinfo import ZoneInfo
+
+        try:
+            ZoneInfo(v)
+        except Exception:
+            raise ValueError(f"unknown timezone '{v}' (use an IANA name such as Asia/Shanghai)")
+        return v
+
 
 class Asr(_Group):
     mode: str = "murmur"  # murmur | openai
