@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+node_modules/
+dist/
+build/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.wav
+*.flac
+.DS_Store
