@@ -1,0 +1,63 @@
+/** @type {import('tailwindcss').Config} */
+const c = (name) => `rgb(var(--${name}) / <alpha-value>)`
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  darkMode: ['selector', '[data-theme="dark"]'],
+  theme: {
+    extend: {
+      colors: {
+        bg: c('bg'),
+        surface: c('surface'),
+        subtle: c('subtle'),
+        hover: c('hover'),
+        line: c('line'),
+        'line-strong': c('line-strong'),
+        fg: c('fg'),
+        muted: c('muted'),
+        faint: c('faint'),
+        accent: c('accent'),
+        'accent-fg': c('accent-fg'),
+        'accent-soft': c('accent-soft'),
+        ok: c('ok'),
+        'ok-soft': c('ok-soft'),
+        warn: c('warn'),
+        'warn-soft': c('warn-soft'),
+        danger: c('danger'),
+        'danger-soft': c('danger-soft'),
+        info: c('info'),
+        'info-soft': c('info-soft'),
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
+      },
+      borderRadius: { lg: '10px', xl: '14px' },
+      boxShadow: {
+        card: '0 1px 2px rgb(0 0 0 / 0.04)',
+        pop: '0 8px 30px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(var(--line) / 1)',
+      },
+      keyframes: {
+        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+        popIn: { from: { opacity: 0, transform: 'translateY(4px) scale(.98)' }, to: { opacity: 1, transform: 'none' } },
+        sheetIn: { from: { transform: 'translateY(100%)' }, to: { transform: 'none' } },
+        drawerIn: { from: { transform: 'translateX(100%)' }, to: { transform: 'none' } },
+        toastIn: { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'none' } },
+        flash: { '0%,100%': { backgroundColor: 'transparent' }, '20%,70%': { backgroundColor: 'rgb(var(--accent) / 0.16)' } },
+        shimmer: { '100%': { transform: 'translateX(100%)' } },
+        shrink: { to: { opacity: 0, transform: 'scale(.96)', maxHeight: '0px', marginBottom: '0px' } },
+        pulseDot: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.35 } },
+      },
+      animation: {
+        'fade-in': 'fadeIn .15s ease-out',
+        'pop-in': 'popIn .14s ease-out',
+        'sheet-in': 'sheetIn .22s cubic-bezier(.2,.8,.2,1)',
+        'drawer-in': 'drawerIn .22s cubic-bezier(.2,.8,.2,1)',
+        'toast-in': 'toastIn .2s ease-out',
+        flash: 'flash 2s ease-out',
+        shimmer: 'shimmer 1.4s infinite',
+        'pulse-dot': 'pulseDot 1.6s ease-in-out infinite',
+      },
+    },
+  },
+  plugins: [],
+}
