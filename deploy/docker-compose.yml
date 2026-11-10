@@ -1,0 +1,62 @@
+# Murmur — all-in-one for a single machine.
+#   cp .env.example .env   (then edit)   &&   docker compose up -d --build
+# Open http://<server>:8000 and set a password. Then create a recorder in the web UI and put its token in .env.
+#
+# Splitting across machines: run `core` here, run `asr` on a GPU box (point Settings → ASR at it), and run the
+# `recorder` on whichever machine the USB microphone is plugged into (see recorder/README.md).
+
+services:
+  core:
+    build:
+      context: ..
+      dockerfile: core/Dockerfile
+    image: murmur-core
+    restart: unless-stopped
+    ports:
+      - "${MURMUR_PORT:-8000}:8000"
+    environment:
+      MURMUR_ROLE: all                       # all | api | worker (run two containers with api + worker to split them)
+      MURMUR_ASR_URL: ${MURMUR_ASR_URL:-http://asr:8100}
+      MURMUR_ASR_API_KEY: ${MURMUR_ASR_API_KEY:-}
+      MURMUR_LLM_BASE_URL: ${MURMUR_LLM_BASE_URL:-}
+      MURMUR_LLM_API_KEY: ${MURMUR_LLM_API_KEY:-}
+      MURMUR_LLM_MODEL: ${MURMUR_LLM_MODEL:-}
+      MURMUR_SECRET_KEY: ${MURMUR_SECRET_KEY:-}
+      # MURMUR_STORAGE: s3://bucket/prefix    # needs AWS_* variables, e.g. for MinIO set AWS_ENDPOINT_URL
+    volumes:
+      - murmur-data:/data
+
+  asr:
+    build:
+      context: ../asr
+    image: murmur-asr
+    restart: unless-stopped
+    profiles: ["asr"]                        # `docker compose --profile asr up -d` to run ASR on this machine
+    environment:
+      MURMUR_ASR_API_KEY: ${MURMUR_ASR_API_KEY:-}
+    volumes:
+      - murmur-models:/models
+    # GPU: build with asr/Dockerfile.gpu and add
+    #   deploy: { resources: { reservations: { devices: [ { driver: nvidia, count: 1, capabilities: [gpu] } ] } } }
+
+  recorder:
+    build:
+      context: ../recorder
+    image: murmur-recorder
+    restart: unless-stopped
+    profiles: ["recorder"]                   # `docker compose --profile recorder up -d` on the machine with the microphone
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
+    environment:
+      MURMUR_CORE_URL: ${MURMUR_CORE_URL:-http://core:8000}
+      MURMUR_TOKEN: ${MURMUR_TOKEN:-}
+      MURMUR_BUFFER_DIR: /buffer
+    volumes:
+      - murmur-buffer:/buffer
+
+volumes:
+  murmur-data:
+  murmur-models:
+  murmur-buffer:
