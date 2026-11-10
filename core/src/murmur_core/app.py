@@ -9,6 +9,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import ValidationError
 
 from . import __version__
@@ -46,8 +47,8 @@ def create_app(config: Optional[Config] = None, runtime: Optional[Runtime] = Non
     app = FastAPI(title="Murmur", version=__version__, lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
     app.state.runtime = rt
 
-    @app.exception_handler(HTTPException)
-    async def http_error(_: Request, exc: HTTPException):
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_: Request, exc: StarletteHTTPException):
         code = getattr(exc, "code", None) or {401: "unauthenticated", 404: "not_found", 405: "method_not_allowed"}.get(exc.status_code, "error")
         return JSONResponse({"detail": exc.detail, "code": code}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
 

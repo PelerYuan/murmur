@@ -123,7 +123,7 @@ def recorder(authed):
 
 
 def upload(client, recorder, started_at: datetime, wav: bytes | None = None, duration: float = 3.0):
-    wav = wav or make_wav(duration, freq=200 + (started_at.second % 50) * 7)
+    wav = wav or make_wav(duration, freq=200 + (int(started_at.timestamp()) % 1000) * 3)
     sha = hashlib.sha256(wav).hexdigest()
     return client.post(
         "/api/v1/recorder/chunks",

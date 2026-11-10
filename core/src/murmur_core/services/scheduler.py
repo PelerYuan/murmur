@@ -23,11 +23,11 @@ TICK_SECONDS = 20
 MAINTENANCE_EVERY = timedelta(hours=1)
 
 
-def safe_horizon(rt: Runtime) -> datetime:
+def safe_horizon(rt: Runtime, now: Optional[datetime] = None) -> datetime:
     """Don't summarize beyond audio that is still waiting to be transcribed."""
     with rt.scope() as s:
         oldest = s.query(func.min(Chunk.started_at)).filter(Chunk.status.in_(["pending", "processing"])).scalar()
-    now = utcnow()
+    now = now or utcnow()
     return min(now, oldest) if oldest else now
 
 
@@ -107,7 +107,7 @@ class Scheduler:
 
     def _schedule_summaries(self, cfg: AllSettings, now: datetime) -> None:
         tz = get_tz(cfg.general.timezone)
-        horizon = safe_horizon(self.rt)
+        horizon = safe_horizon(self.rt, now)
         sch = cfg.schedule
         with self.rt.scope() as s:
             if sch.incremental.enabled or sch.idle.enabled:
