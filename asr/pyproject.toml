@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "murmur-asr"
+version = "0.1.0"
+description = "Murmur ASR service: VAD + speech recognition + speaker embeddings over HTTP (sherpa-onnx)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "sherpa-onnx>=1.12",
+    "numpy>=1.24",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27", "scipy>=1.10", "soundfile>=0.12"]
+
+[project.scripts]
+murmur-asr = "murmur_asr.__main__:main"
+murmur-asr-download = "murmur_asr.download_models:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/murmur_asr"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "heavy: loads the real models and runs real audio through them (needs ~1 GB RAM, models downloaded)",
+]
+addopts = "-ra"

@@ -1,0 +1,42 @@
+# murmur-asr, NVIDIA GPU image.   *** UNVERIFIED: written without access to a GPU (see README "GPU / CUDA") ***
+#
+#   docker build -f Dockerfile.gpu -t murmur-asr:gpu .
+#   docker run --gpus all -p 8100:8100 -v murmur-models:/models murmur-asr:gpu
+#
+# The only real difference from the CPU image: sherpa-onnx comes from the project's CUDA wheel
+# (a build of sherpa-onnx linked against onnxruntime-gpu, ~450 MB) and MURMUR_ASR_PROVIDER=cuda.
+# Needs a host driver compatible with CUDA 12.x and the NVIDIA Container Toolkit.
+FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    MURMUR_ASR_MODEL_DIR=/models \
+    MURMUR_ASR_HOST=0.0.0.0 \
+    MURMUR_ASR_PORT=8100 \
+    MURMUR_ASR_PROVIDER=cuda
+
+# Ubuntu 22.04 ships Python 3.10, which is what the cp310 wheel below needs
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd --create-home --uid 1000 murmur && mkdir /models && chown murmur:murmur /models
+
+WORKDIR /app
+COPY constraints.txt pyproject.toml README.md ./
+COPY src ./src
+# 1) the CUDA build of sherpa-onnx (the version string after '+' selects CUDA 12 / cuDNN 9)
+RUN pip install "sherpa-onnx==2.0.1+cuda12.cudnn9.onnxruntime1.28.2" \
+        -f https://k2-fsa.github.io/sherpa/onnx/cuda.html
+# 2) everything else; the sherpa pins are dropped so pip keeps the CUDA wheel installed above
+RUN grep -v -i "sherpa" constraints.txt > /tmp/constraints.nosherpa.txt && \
+    pip install -c /tmp/constraints.nosherpa.txt .
+
+USER murmur
+VOLUME /models
+EXPOSE 8100
+HEALTHCHECK --interval=30s --timeout=5s --start-period=600s --retries=3 \
+  CMD python3 -c "import os,urllib.request as u; u.urlopen('http://127.0.0.1:%s/health' % os.environ.get('MURMUR_ASR_PORT','8100'), timeout=4)" || exit 1
+
+CMD ["python3", "-m", "murmur_asr"]
