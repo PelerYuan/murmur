@@ -275,3 +275,23 @@ sessions(token_hash, created_at, expires_at)
 - `ghcr.io`-风格镜像三个：`murmur-core`（含构建好的 web，`MURMUR_ROLE=all|api|worker`）、`murmur-asr`（CPU，GPU 变体用 CUDA 版 onnxruntime）、`murmur-recorder`
 - Core 环境变量：`MURMUR_DATA_DIR`（默认 `./data`）、`MURMUR_DATABASE_URL`（默认 `sqlite:///{data_dir}/murmur.db`）、`MURMUR_SECRET_KEY`（加密 API Key，缺省时自动生成并保存在 data 目录）、`MURMUR_ROLE`、`MURMUR_HOST`/`MURMUR_PORT`、`MURMUR_ASR_URL` / `MURMUR_LLM_*`（仅作为首次启动的设置默认值）、`MURMUR_STORAGE`（`local` 或 `s3://bucket/prefix`）
 - Recorder 环境变量：`MURMUR_CORE_URL`、`MURMUR_TOKEN`、`MURMUR_BUFFER_DIR`、`MURMUR_SOURCE`（`device` 默认，或 `file:/path.wav` 用于测试）
+
+---
+
+## 6. 契约补充（v1 实现中新增，向后兼容）
+
+| 位置 | 补充 |
+|---|---|
+| `GET /utterances` | 新增 `exclude_ignored`（默认 `true`，过滤已忽略说话人的历史话语）、`order=asc\|desc`（默认 `desc`）、`around=<utterance_id>&window=<秒，默认 300>`（取某句话前后的上下文，按时间升序返回） |
+| `GET /utterances/{id}` | 取单条话语 |
+| `GET /utterances/days?from=&to=` | 按设置时区统计有话语的日期：`[{"date":"2026-11-11","count":120}]` |
+| `Utterance` | 新增 `text_edited: bool`（文字被人工改过） |
+| `Speaker.samples[]` | 新增 `text`（样本对应的话语文本，可能为 `null`） |
+| `DELETE /speakers/{id}` | 新增查询参数 `delete_utterances=true`，同时删除该说话人的全部话语 |
+| `POST /todos` | 请求体：`text`（必填）、`assignee_speaker_id`、`due_at`、`remind_at`、`source_utterance_id` |
+| `GET /settings/defaults` | `{"prompts":{"summary","daily","todos"}, "placeholders":[...]}`，内置提示词模板（按当前输出语言） |
+| 限速 | `POST /auth/login` 被限速时返回 `429`，`Retry-After` 头为剩余秒数，`code: rate_limited` |
+| `SummaryJob.error` | 范围内没有话语时 `status=done`、`summary_id=null`、`error="no_utterances"` |
+| 合并说话人 | 以目标说话人的状态为准；目标未命名而来源已命名时，目标继承来源的名字和状态 |
+| `PATCH /speakers/{id}` | `state` 取值 `unnamed/named/ignored`；`{name:""}` 取消命名（`named`→`unnamed`）；`state=named` 需已有名字 |
+| CLI | `murmur-core reset-password` 重置网页密码 |
